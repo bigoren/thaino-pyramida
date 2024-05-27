@@ -38,7 +38,7 @@ const int pin4 = 16; // LSB
 // State machine states
 enum State
 {
-    STATE_0,
+    STATE_IDLE,
     STATE_1,
     STATE_2,
     STATE_3,
@@ -52,8 +52,8 @@ enum State
     STATE_11
 };
 
-State currentState = STATE_0;
-State previousState = STATE_0;
+State currentState = STATE_IDLE;
+State previousState = STATE_IDLE;
 unsigned long startTime = 0;
 unsigned long momentaryStartTime = 0;
 unsigned long buttonPressStartTime = 0;
@@ -235,7 +235,7 @@ void loop()
     // State machine
     switch (currentState)
     {
-    case STATE_0:
+    case STATE_IDLE:
         if (triggerID == 1)
         {
             Serial.println("Trigger 1: Timer reset.");
@@ -280,8 +280,8 @@ void loop()
     case STATE_1:
         if (millis() - startTime > TIMEOUT)
         {
-            Serial.println("Timer overflow. Transition to STATE_0");
-            currentState = STATE_0;
+            Serial.println("Timer overflow. Transition to STATE_IDLE");
+            currentState = STATE_IDLE;
         }
         else if (triggerID == 4 || triggerID == 5)
         {
@@ -317,8 +317,8 @@ void loop()
     case STATE_2:
         if (millis() - startTime > TIMEOUT)
         {
-            Serial.println("Timer overflow. Transition to STATE_0");
-            currentState = STATE_0;
+            Serial.println("Timer overflow. Transition to STATE_IDLE");
+            currentState = STATE_IDLE;
         }
         else if (triggerID == 6)
         {
@@ -337,8 +337,8 @@ void loop()
     case STATE_3:
         if (millis() - startTime > TIMEOUT)
         {
-            Serial.println("Timer overflow. Transition to STATE_0");
-            currentState = STATE_0;
+            Serial.println("Timer overflow. Transition to STATE_IDLE");
+            currentState = STATE_IDLE;
         }
         else if (triggerID == 7)
         {
@@ -357,8 +357,8 @@ void loop()
     case STATE_4:
         if (millis() - startTime > TIMEOUT)
         {
-            Serial.println("Timer overflow. Transition to STATE_0");
-            currentState = STATE_0;
+            Serial.println("Timer overflow. Transition to STATE_IDLE");
+            currentState = STATE_IDLE;
         }
         else if (triggerID == 8)
         {
@@ -383,7 +383,6 @@ void loop()
         // if (millis() - momentaryStartTime > MOMENTARY_STATE_DURATION) {
         if (end_of_file)
         {
-
             Serial.println("momentery animation finished");
             currentState = previousState;
         }
@@ -392,67 +391,70 @@ void loop()
     case STATE_11:
         if (millis() - momentaryStartTime > STATE_11_DURATION)
         {
-            Serial.println("STATE_11 duration ended. Transition to STATE_0.");
-            currentState = STATE_0;
+            Serial.println("STATE_11 duration ended. Transition to STATE_IDLE.");
+            currentState = STATE_IDLE;
         }
         break;
 
     default:
         // Should never reach here
         Serial.println("Unknown state!");
-        currentState = STATE_0;
+        currentState = STATE_IDLE;
         break;
     }
+
     if (end_of_file)
     {
         next_animation(currentState);
     }
+    
     // Print the current state every 3 seconds
     if (millis() - lastStatePrintTime > PRINT_INTERVAL)
     {
         Serial.print("Current State: ");
-        switch (currentState)
-        {
-        case STATE_0:
-            Serial.println("STATE_0");
-            break;
-        case STATE_1:
-            Serial.println("STATE_1");
-            break;
-        case STATE_2:
-            Serial.println("STATE_2");
-            break;
-        case STATE_3:
-            Serial.println("STATE_3");
-            break;
-        case STATE_4:
-            Serial.println("STATE_4");
-            break;
-        case STATE_5:
-            Serial.println("STATE_5");
-            break;
-        case STATE_6:
-            Serial.println("STATE_6");
-            break;
-        case STATE_7:
-            Serial.println("STATE_7");
-            break;
-        case STATE_8:
-            Serial.println("STATE_8");
-            break;
-        case STATE_9:
-            Serial.println("STATE_9");
-            break;
-        case STATE_10:
-            Serial.println("STATE_10");
-            break;
-        case STATE_11:
-            Serial.println("STATE_11");
-            break;
-        default:
-            Serial.println("UNKNOWN STATE");
-            break;
-        }
+        Serial.println(currentState);
+        // switch (currentState)
+        // {
+        // case STATE_IDLE:
+        //     Serial.println("STATE_IDLE");
+        //     break;
+        // case STATE_1:
+        //     Serial.println("STATE_1");
+        //     break;
+        // case STATE_2:
+        //     Serial.println("STATE_2");
+        //     break;
+        // case STATE_3:
+        //     Serial.println("STATE_3");
+        //     break;
+        // case STATE_4:
+        //     Serial.println("STATE_4");
+        //     break;
+        // case STATE_5:
+        //     Serial.println("STATE_5");
+        //     break;
+        // case STATE_6:
+        //     Serial.println("STATE_6");
+        //     break;
+        // case STATE_7:
+        //     Serial.println("STATE_7");
+        //     break;
+        // case STATE_8:
+        //     Serial.println("STATE_8");
+        //     break;
+        // case STATE_9:
+        //     Serial.println("STATE_9");
+        //     break;
+        // case STATE_10:
+        //     Serial.println("STATE_10");
+        //     break;
+        // case STATE_11:
+        //     Serial.println("STATE_11");
+        //     break;
+        // default:
+        //     Serial.println("UNKNOWN STATE");
+        //     break;
+        // }
         // Serial.print("Current Animation: ");
         // Serial.println(animations[currentAnimation]);
         // Serial.print("Is Playing: ");
