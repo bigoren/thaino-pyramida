@@ -36,20 +36,23 @@ const int pin3 = 17;
 const int pin4 = 16; // LSB
 
 // State machine states
-enum State
-{
-    STATE_IDLE,
-    STATE_1,
-    STATE_2,
-    STATE_3,
-    STATE_4,
-    STATE_5,
-    STATE_6,
-    STATE_7,
-    STATE_8,
-    STATE_9,
-    STATE_10,
-    STATE_11
+enum State {
+    STATE_IDLE = 0,
+    STATE_1 = 1,
+    STATE_2 = 2,
+    STATE_3 = 3,
+    STATE_4 = 4,
+    STATE_5 = 5,
+    STATE_6 = 6,
+    STATE_7 = 7,
+    STATE_8 = 8,
+    STATE_9 = 9,
+    STATE_10 = 10,
+    STATE_11 = 11,
+    STATE_12 = 12,
+    STATE_13 = 13,
+    STATE_14 = 14,
+    STATE_STOP = 15
 };
 
 State currentState = STATE_IDLE;
@@ -72,6 +75,35 @@ const unsigned long buttonPressTimeFrame = 30000; // 30 seconds for the presses
 
 unsigned long animationStartTime = 0;
 bool endOfTrack = false;
+
+//////////// Audio //////////
+#define OUTGPIO0 28 // MSB
+#define OUTGPIO1 30
+#define OUTGPIO2 31
+#define OUTGPIO3 32 // LSB
+State audioState = STATE_IDLE;
+State prevAudioState = STATE_IDLE;
+unsigned long audioStartTime = 0;
+unsigned long audioStateDebounceDelay = 2; // 2ms debounce delay
+
+void setAudioState (enum State state) {
+  Serial.print("Changing to state: "); Serial.println(state);
+  digitalWriteFast(OUTGPIO0, state & 0x01);
+  digitalWriteFast(OUTGPIO1, state & 0x02);
+  digitalWriteFast(OUTGPIO2, state & 0x04);
+  digitalWriteFast(OUTGPIO3, state & 0x08);
+}
+
+void audioStateInit() {
+    pinMode(OUTGPIO0, OUTPUT);
+    pinMode(OUTGPIO1, OUTPUT);
+    pinMode(OUTGPIO2, OUTPUT);
+    pinMode(OUTGPIO3, OUTPUT);
+    setAudioState(STATE_IDLE);
+    Serial.print("Audio state output pins set to: "); 
+    Serial.print(OUTGPIO0); Serial.print(" "); Serial.print(OUTGPIO1); Serial.print(" "); Serial.print(OUTGPIO2); Serial.print(" "); Serial.println(OUTGPIO3);
+}
+
 
 void setup()
 {
@@ -101,6 +133,8 @@ void setup()
     // } else {
     //     Serial.println("LED SD card initialized.");
     // }
+
+    audioStateInit();
 }
 
 //////////// logic functions
@@ -114,6 +148,9 @@ void next_animation(State state)
     sd_leds_player.load_next_frame();
     sd_leds_player.show_next_frame();
     animationStartTime = millis(); // Reset the frame timer
+
+    // Set the audio state to tell the other teensy what song to play
+    audioState = state;
 }
 
 void resetButtonPressCount()
@@ -413,48 +450,7 @@ void loop()
     {
         Serial.print("Current State: ");
         Serial.println(currentState);
-        // switch (currentState)
-        // {
-        // case STATE_IDLE:
-        //     Serial.println("STATE_IDLE");
-        //     break;
-        // case STATE_1:
-        //     Serial.println("STATE_1");
-        //     break;
-        // case STATE_2:
-        //     Serial.println("STATE_2");
-        //     break;
-        // case STATE_3:
-        //     Serial.println("STATE_3");
-        //     break;
-        // case STATE_4:
-        //     Serial.println("STATE_4");
-        //     break;
-        // case STATE_5:
-        //     Serial.println("STATE_5");
-        //     break;
-        // case STATE_6:
-        //     Serial.println("STATE_6");
-        //     break;
-        // case STATE_7:
-        //     Serial.println("STATE_7");
-        //     break;
-        // case STATE_8:
-        //     Serial.println("STATE_8");
-        //     break;
-        // case STATE_9:
-        //     Serial.println("STATE_9");
-        //     break;
-        // case STATE_10:
-        //     Serial.println("STATE_10");
-        //     break;
-        // case STATE_11:
-        //     Serial.println("STATE_11");
-        //     break;
-        // default:
-        //     Serial.println("UNKNOWN STATE");
-        //     break;
-        // }
+        
         // Serial.print("Current Animation: ");
         // Serial.println(animations[currentAnimation]);
         // Serial.print("Is Playing: ");
@@ -462,5 +458,17 @@ void loop()
         lastStatePrintTime = millis(); // Reset the print timer
     }
 
-    delay(100);
+  // State tracking between two teensies
+  if (audioState != prevAudioState) {
+    audioStartTime = millis();
+    setAudioState(audioState);
+  }
+  prevAudioState = audioState;
+  // Holding non IDLE state for a short while so we can use debounce on second teensy to capture state safely
+  if (audioState != STATE_IDLE) {
+    if ((millis() - audioStartTime) > audioStateDebounceDelay) {
+      audioState = STATE_IDLE;
+      audioStartTime = millis();
+    }
+  } 
 }
